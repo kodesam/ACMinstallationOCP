@@ -1,0 +1,852 @@
+[student@workstation ~]$ lab start multicluster-review
+The Lab environment is not ready, please wait 10 minutes before trying again.
+[student@workstation ~]$ lab start multicluster-review
+The Lab environment is not ready, please wait 10 minutes before trying again.
+[student@workstation ~]$ lab start multicluster-review
+The Lab environment is not ready, please wait 10 minutes before trying again.
+[student@workstation ~]$ lab start multicluster-review
+The Lab environment is not ready, please wait 10 minutes before trying again.
+[student@workstation ~]$ lab start multicluster-review
+The Lab environment is not ready, please wait 10 minutes before trying again.
+[student@workstation ~]$ lab start multicluster-review
+The Lab environment is not ready, please wait 10 minutes before trying again.
+[student@workstation ~]$ 
+[student@workstation ~]$ lab start multicluster-review
+
+Starting lab.
+
+ · Checking lab systems .............................................. SUCCESS
+ · Checking that the OCP hub is up and ready ......................... SUCCESS
+ · Verifying connectivity to OCP4 cluster ............................ SUCCESS
+ · Verifying that the RHACM Operator is not present. Deleting if
+   present. This command takes a while. Do not interrupt the
+   execution. ........................................................ SUCCESS
+ · Verifying that the RHACM cluster roles are not present in the
+   managed cluster. Deleting if present. ............................. SUCCESS
+ · Copy exercise files ............................................... SUCCESS
+ · Logging out ....................................................... SUCCESS
+
+[student@workstation ~]$ oc login -u -p redhat
+error: dial tcp: lookup redhat on 172.25.250.254:53: no such host - verify you have provided the correct host and port and that the server is currently running.
+[student@workstation ~]$ oc login -u admin -p redhat
+Login successful.
+
+You have access to 66 projects, the list has been suppressed. You can list all projects with 'oc projects'
+
+Using project "default".
+[student@workstation ~]$ oc whoami --show-console 
+https://console-openshift-console.apps.ocp4-mng.example.com
+[student@workstation ~]$ oc whoami --show-console 
+https://console-openshift-console.apps.ocp4-mng.example.com
+[student@workstation ~]$ oc login -u admin -p redhat \
+> https://api.ocp4.example.com:6443
+Login successful.
+
+You have access to 68 projects, the list has been suppressed. You can list all projects with 'oc projects'
+
+Using project "default".
+[student@workstation ~]$ oc new-project open-cluster-management
+Error from server (AlreadyExists): project.project.openshift.io "open-cluster-management" already exists
+[student@workstation ~]$ oc delete projects open
+open-cluster-management
+openshift
+openshift-apiserver
+openshift-apiserver-operator
+openshift-authentication
+openshift-authentication-operator
+openshift-cloud-controller-manager
+openshift-cloud-controller-manager-operator
+openshift-cloud-credential-operator
+openshift-cloud-network-config-controller
+openshift-cluster-csi-drivers
+openshift-cluster-machine-approver
+openshift-cluster-node-tuning-operator
+openshift-cluster-samples-operator
+openshift-cluster-storage-operator
+openshift-cluster-version
+openshift-config
+openshift-config-managed
+openshift-config-operator
+openshift-console
+openshift-console-operator
+openshift-console-user-settings
+openshift-controller-manager
+[student@workstation ~]$ oc delete projects open-cluster-management 
+project.project.openshift.io "open-cluster-management" deleted
+[student@workstation ~]$ oc new-project open-cluster-management
+Error from server (AlreadyExists): project.project.openshift.io "open-cluster-management" already exists
+[student@workstation ~]$ oc delete projects open-cluster-management 
+Error from server (NotFound): namespaces "open-cluster-management" not found
+[student@workstation ~]$ oc new-project open-cluster-management
+Now using project "open-cluster-management" on server "https://api.ocp4.example.com:6443".
+
+You can add applications to this project with the 'new-app' command. For example, try:
+
+    oc new-app rails-postgresql-example
+
+to build a new example application in Ruby. Or use kubectl to deploy a simple Kubernetes application:
+
+    kubectl create deployment hello-node --image=k8s.gcr.io/e2e-test-images/agnhost:2.33 -- /agnhost serve-hostname
+
+[student@workstation ~]$ cd DO480/labs/multicluster-review
+[student@workstation multicluster-review]$ ll
+total 20
+-rw-rw-r--. 1 student student 491 Oct  1 14:46 klusterlet.yaml
+-rw-rw-r--. 1 student student 153 Oct  1 14:46 mch.yaml
+-rw-rw-r--. 1 student student 136 Oct  1 14:46 mngcluster.yaml
+-rw-rw-r--. 1 student student 147 Oct  1 14:46 operator-group.yaml
+-rw-rw-r--. 1 student student 265 Oct  1 14:46 subscription.yaml
+[student@workstation multicluster-review]$ cat operator-group.yaml 
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: acm-operator-group
+spec:
+  targetNamespaces:
+  - open-cluster-management
+[student@workstation multicluster-review]$ oc create -f operator-group.yaml 
+operatorgroup.operators.coreos.com/acm-operator-group created
+[student@workstation multicluster-review]$ cat subscription.yaml 
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: acm-operator-subscription
+spec:
+  sourceNamespace: openshift-marketplace
+  source: do480-catalog
+  channel: release-2.4
+  installPlanApproval: Manual
+  name: advanced-cluster-management
+[student@workstation multicluster-review]$ oc create -f subscription.yaml 
+subscription.operators.coreos.com/acm-operator-subscription created
+[student@workstation multicluster-review]$ 
+[student@workstation multicluster-review]$ oc get installplans.operators.coreos.com 
+NAME            CSV                                  APPROVAL   APPROVED
+install-7jvh4   advanced-cluster-management.v2.4.2   Manual     false
+[student@workstation multicluster-review]$ oc patch in
+infrastructures.config.openshift.io       ingresscontrollers.operator.openshift.io  ingresses.networking.k8s.io               
+ingressclasses.networking.k8s.io          ingresses.config.openshift.io             installplans.operators.coreos.com         
+[student@workstation multicluster-review]$ oc patch installplans.operators.coreos.com install-7jvh4 --type merge --patch '{"spec":{"approved":true}}'
+installplan.operators.coreos.com/install-7jvh4 patched
+[student@workstation multicluster-review]$ oc get installplans.operators.coreos.com 
+NAME            CSV                                  APPROVAL   APPROVED
+install-7jvh4   advanced-cluster-management.v2.4.2   Manual     true
+[student@workstation multicluster-review]$ watch oc get csv
+[student@workstation multicluster-review]$  oc get csv
+NAME                                 DISPLAY                                      VERSION   REPLACES                             PHASE
+advanced-cluster-management.v2.4.2   Advanced Cluster Management for Kubernetes   2.4.2     advanced-cluster-management.v2.4.1   Succeeded
+[student@workstation multicluster-review]$ 
+[student@workstation multicluster-review]$ 
+[student@workstation multicluster-review]$ ll
+total 20
+-rw-rw-r--. 1 student student 491 Oct  1 14:46 klusterlet.yaml
+-rw-rw-r--. 1 student student 153 Oct  1 14:46 mch.yaml
+-rw-rw-r--. 1 student student 136 Oct  1 14:46 mngcluster.yaml
+-rw-rw-r--. 1 student student 147 Oct  1 14:46 operator-group.yaml
+-rw-rw-r--. 1 student student 265 Oct  1 14:46 subscription.yaml
+[student@workstation multicluster-review]$ cat mch.yaml 
+apiVersion: operator.open-cluster-management.io/v1
+kind: MultiClusterHub
+metadata:
+  name: multiclusterhub
+  namespace: open-cluster-management
+spec: {}
+[student@workstation multicluster-review]$ oc create -f mch.yaml 
+multiclusterhub.operator.open-cluster-management.io/multiclusterhub created
+[student@workstation multicluster-review]$ oc get mch
+NAME              STATUS       AGE
+multiclusterhub   Installing   8s
+[student@workstation multicluster-review]$ oc get mch
+NAME              STATUS       AGE
+multiclusterhub   Installing   83s
+[student@workstation multicluster-review]$ oc get mch
+NAME              STATUS       AGE
+multiclusterhub   Installing   2m2s
+[student@workstation multicluster-review]$ oc get mch
+NAME              STATUS       AGE
+multiclusterhub   Installing   2m38s
+[student@workstation multicluster-review]$ oc get mch
+NAME              STATUS       AGE
+multiclusterhub   Installing   3m41s
+[student@workstation multicluster-review]$ oc get mch
+NAME              STATUS    AGE
+multiclusterhub   Running   5m20s
+[student@workstation multicluster-review]$ 
+[student@workstation multicluster-review]$ oc new-project managed-cluster
+Now using project "managed-cluster" on server "https://api.ocp4.example.com:6443".
+
+You can add applications to this project with the 'new-app' command. For example, try:
+
+    oc new-app rails-postgresql-example
+
+to build a new example application in Ruby. Or use kubectl to deploy a simple Kubernetes application:
+
+    kubectl create deployment hello-node --image=k8s.gcr.io/e2e-test-images/agnhost:2.33 -- /agnhost serve-hostname
+
+[student@workstation multicluster-review]$  oc label namespace managed-cluster \
+>  cluster.open-cluster-management.io/managedCluster=managed-cluster
+namespace/managed-cluster labeled
+[student@workstation multicluster-review]$ ll
+total 20
+-rw-rw-r--. 1 student student 491 Oct  1 14:46 klusterlet.yaml
+-rw-rw-r--. 1 student student 153 Oct  1 14:46 mch.yaml
+-rw-rw-r--. 1 student student 136 Oct  1 14:46 mngcluster.yaml
+-rw-rw-r--. 1 student student 147 Oct  1 14:46 operator-group.yaml
+-rw-rw-r--. 1 student student 265 Oct  1 14:46 subscription.yaml
+[student@workstation multicluster-review]$ cat mngcluster.yaml 
+apiVersion: cluster.open-cluster-management.io/v1
+kind: ManagedCluster
+metadata:
+  name: managed-cluster
+spec:
+  hubAcceptsClient: true
+[student@workstation multicluster-review]$ oc create -f mngcluster.yaml 
+managedcluster.cluster.open-cluster-management.io/managed-cluster created
+[student@workstation multicluster-review]$ 
+[student@workstation multicluster-review]$ 
+[student@workstation multicluster-review]$ ll
+total 20
+-rw-rw-r--. 1 student student 491 Oct  1 14:46 klusterlet.yaml
+-rw-rw-r--. 1 student student 153 Oct  1 14:46 mch.yaml
+-rw-rw-r--. 1 student student 136 Oct  1 14:46 mngcluster.yaml
+-rw-rw-r--. 1 student student 147 Oct  1 14:46 operator-group.yaml
+-rw-rw-r--. 1 student student 265 Oct  1 14:46 subscription.yaml
+[student@workstation multicluster-review]$ cat klusterlet.yaml 
+apiVersion: agent.open-cluster-management.io/v1
+kind: KlusterletAddonConfig
+metadata:
+  name: managed-cluster
+  namespace: managed-cluster
+spec:
+  clusterName: managed-cluster
+  clusterNamespace: managed-cluster
+  applicationManager:
+    enabled: true
+  certPolicyController:
+    enabled: true
+  clusterLabels:
+    cloud: auto-detect
+    vendor: auto-detect
+  iamPolicyController:
+    enabled: true
+  policyController:
+    enabled: true
+  searchCollector:
+    enabled: true
+  version: 2.4.2
+[student@workstation multicluster-review]$ oc create -f klusterlet.yaml 
+klusterletaddonconfig.agent.open-cluster-management.io/managed-cluster created
+[student@workstation multicluster-review]$ 
+[student@workstation multicluster-review]$ 
+[student@workstation multicluster-review]$ 
+[student@workstation multicluster-review]$ oc get secret managed-cluster-import \
+> -n managed-cluster -o jsonpath={.data.crds\\.yaml} | base64 \
+> --decode > klusterlet-crd.yaml
+[student@workstation multicluster-review]$ ll
+total 36
+-rw-rw-r--. 1 student student 15148 Oct  1 16:41 klusterlet-crd.yaml
+-rw-rw-r--. 1 student student   491 Oct  1 14:46 klusterlet.yaml
+-rw-rw-r--. 1 student student   153 Oct  1 14:46 mch.yaml
+-rw-rw-r--. 1 student student   136 Oct  1 14:46 mngcluster.yaml
+-rw-rw-r--. 1 student student   147 Oct  1 14:46 operator-group.yaml
+-rw-rw-r--. 1 student student   265 Oct  1 14:46 subscription.yaml
+[student@workstation multicluster-review]$ cat klusterlet-crd.yaml 
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: klusterlets.operator.open-cluster-management.io
+spec:
+  group: operator.open-cluster-management.io
+  names:
+    kind: Klusterlet
+    listKind: KlusterletList
+    plural: klusterlets
+    singular: klusterlet
+  scope: Cluster
+  preserveUnknownFields: false
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: Klusterlet represents controllers on the managed cluster. When
+          configured, the Klusterlet requires a secret named of bootstrap-hub-kubeconfig
+          in the same namespace to allow API requests to the hub for the registration
+          protocol.
+        type: object
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec represents the desired deployment configuration of Klusterlet
+              agent.
+            type: object
+            properties:
+              clusterName:
+                description: ClusterName is the name of the managed cluster to be
+                  created on hub. The Klusterlet agent generates a random name if
+                  it is not set, or discovers the appropriate cluster name on OpenShift.
+                type: string
+              externalServerURLs:
+                description: ExternalServerURLs represents the a list of apiserver
+                  urls and ca bundles that is accessible externally If it is set empty,
+                  managed cluster has no externally accessible url that hub cluster
+                  can visit.
+                type: array
+                items:
+                  description: ServerURL represents the apiserver url and ca bundle
+                    that is accessible externally
+                  type: object
+                  properties:
+                    caBundle:
+                      description: CABundle is the ca bundle to connect to apiserver
+                        of the managed cluster. System certs are used if it is not
+                        set.
+                      type: string
+                      format: byte
+                    url:
+                      description: URL is the url of apiserver endpoint of the managed
+                        cluster.
+                      type: string
+              namespace:
+                description: Namespace is the namespace to deploy the agent. The namespace
+                  must have a prefix of "open-cluster-management-", and if it is not
+                  set, the namespace of "open-cluster-management-agent" is used to
+                  deploy agent.
+                type: string
+              nodePlacement:
+                description: NodePlacement enables explicit control over the scheduling
+                  of the deployed pods.
+                type: object
+                properties:
+                  nodeSelector:
+                    description: NodeSelector defines which Nodes the Pods are scheduled
+                      on. The default is an empty list.
+                    type: object
+                    additionalProperties:
+                      type: string
+                  tolerations:
+                    description: Tolerations is attached by pods to tolerate any taint
+                      that matches the triple <key,value,effect> using the matching
+                      operator <operator>. The default is an empty list.
+                    type: array
+                    items:
+                      description: The pod this Toleration is attached to tolerates
+                        any taint that matches the triple <key,value,effect> using
+                        the matching operator <operator>.
+                      type: object
+                      properties:
+                        effect:
+                          description: Effect indicates the taint effect to match.
+                            Empty means match all taint effects. When specified, allowed
+                            values are NoSchedule, PreferNoSchedule and NoExecute.
+                          type: string
+                        key:
+                          description: Key is the taint key that the toleration applies
+                            to. Empty means match all taint keys. If the key is empty,
+                            operator must be Exists; this combination means to match
+                            all values and all keys.
+                          type: string
+                        operator:
+                          description: Operator represents a key's relationship to
+                            the value. Valid operators are Exists and Equal. Defaults
+                            to Equal. Exists is equivalent to wildcard for value,
+                            so that a pod can tolerate all taints of a particular
+                            category.
+                          type: string
+                        tolerationSeconds:
+                          description: TolerationSeconds represents the period of
+                            time the toleration (which must be of effect NoExecute,
+                            otherwise this field is ignored) tolerates the taint.
+                            By default, it is not set, which means tolerate the taint
+                            forever (do not evict). Zero and negative values will
+                            be treated as 0 (evict immediately) by the system.
+                          type: integer
+                          format: int64
+                        value:
+                          description: Value is the taint value the toleration matches
+                            to. If the operator is Exists, the value should be empty,
+                            otherwise just a regular string.
+                          type: string
+              registrationImagePullSpec:
+                description: RegistrationImagePullSpec represents the desired image
+                  configuration of registration agent.
+                type: string
+              workImagePullSpec:
+                description: WorkImagePullSpec represents the desired image configuration
+                  of work agent.
+                type: string
+          status:
+            description: Status represents the current status of Klusterlet agent.
+            type: object
+            properties:
+              conditions:
+                description: 'Conditions contain the different condition statuses
+                  for this Klusterlet. Valid condition types are: Applied: Components
+                  have been applied in the managed cluster. Available: Components
+                  in the managed cluster are available and ready to serve. Progressing:
+                  Components in the managed cluster are in a transitioning state.
+                  Degraded: Components in the managed cluster do not match the desired
+                  configuration and only provide degraded service.'
+                type: array
+                items:
+                  description: "Condition contains details for one aspect of the current
+                    state of this API Resource. --- This struct is intended for direct
+                    use as an array at the field path .status.conditions.  For example,
+                    type FooStatus struct{     // Represents the observations of a
+                    foo's current state.     // Known .status.conditions.type are:
+                    \"Available\", \"Progressing\", and \"Degraded\"     // +patchMergeKey=type
+                    \    // +patchStrategy=merge     // +listType=map     // +listMapKey=type
+                    \    Conditions []metav1.Condition `json:\"conditions,omitempty\"
+                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`
+                    \n     // other fields }"
+                  type: object
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  properties:
+                    lastTransitionTime:
+                      description: lastTransitionTime is the last time the condition
+                        transitioned from one status to another. This should be when
+                        the underlying condition changed.  If that is not known, then
+                        using the time when the API field changed is acceptable.
+                      type: string
+                      format: date-time
+                    message:
+                      description: message is a human readable message indicating
+                        details about the transition. This may be an empty string.
+                      type: string
+                      maxLength: 32768
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon. For instance, if .metadata.generation
+                        is currently 12, but the .status.conditions[x].observedGeneration
+                        is 9, the condition is out of date with respect to the current
+                        state of the instance.
+                      type: integer
+                      format: int64
+                      minimum: 0
+                    reason:
+                      description: reason contains a programmatic identifier indicating
+                        the reason for the condition's last transition. Producers
+                        of specific condition types may define expected values and
+                        meanings for this field, and whether the values are considered
+                        a guaranteed API. The value should be a CamelCase string.
+                        This field may not be empty.
+                      type: string
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      type: string
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                        --- Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      type: string
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+              generations:
+                description: Generations are used to determine when an item needs
+                  to be reconciled or has changed in a way that needs a reaction.
+                type: array
+                items:
+                  description: GenerationStatus keeps track of the generation for
+                    a given resource so that decisions about forced updates can be
+                    made. The definition matches the GenerationStatus defined in github.com/openshift/api/v1
+                  type: object
+                  properties:
+                    group:
+                      description: group is the group of the resource that you're
+                        tracking
+                      type: string
+                    lastGeneration:
+                      description: lastGeneration is the last generation of the resource
+                        that controller applies
+                      type: integer
+                      format: int64
+                    name:
+                      description: name is the name of the resource that you're tracking
+                      type: string
+                    namespace:
+                      description: namespace is where the resource that you're tracking
+                        is
+                      type: string
+                    resource:
+                      description: resource is the resource type of the resource that
+                        you're tracking
+                      type: string
+                    version:
+                      description: version is the version of the resource that you're
+                        tracking
+                      type: string
+              observedGeneration:
+                description: ObservedGeneration is the last generation change you've
+                  dealt with
+                type: integer
+                format: int64
+              relatedResources:
+                description: RelatedResources are used to track the resources that
+                  are related to this Klusterlet.
+                type: array
+                items:
+                  description: RelatedResourceMeta represents the resource that is
+                    managed by an operator
+                  type: object
+                  properties:
+                    group:
+                      description: group is the group of the resource that you're
+                        tracking
+                      type: string
+                    name:
+                      description: name is the name of the resource that you're tracking
+                      type: string
+                    namespace:
+                      description: namespace is where the thing you're tracking is
+                      type: string
+                    resource:
+                      description: resource is the resource type of the resource that
+                        you're tracking
+                      type: string
+                    version:
+                      description: version is the version of the thing you're tracking
+                      type: string
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+[student@workstation multicluster-review]$ oc get secret managed-cluster-import -n managed-cluster -o jsonpath={.data.import\\.yaml} | base64 --decode > import.yaml
+[student@workstation multicluster-review]$ ll
+total 52
+-rw-rw-r--. 1 student student 15541 Oct  1 16:43 import.yaml
+-rw-rw-r--. 1 student student 15148 Oct  1 16:41 klusterlet-crd.yaml
+-rw-rw-r--. 1 student student   491 Oct  1 14:46 klusterlet.yaml
+-rw-rw-r--. 1 student student   153 Oct  1 14:46 mch.yaml
+-rw-rw-r--. 1 student student   136 Oct  1 14:46 mngcluster.yaml
+-rw-rw-r--. 1 student student   147 Oct  1 14:46 operator-group.yaml
+-rw-rw-r--. 1 student student   265 Oct  1 14:46 subscription.yaml
+[student@workstation multicluster-review]$ cat import.yaml 
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  annotations:
+    workload.openshift.io/allowed: "management"
+  name: "open-cluster-management-agent"
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: klusterlet
+  namespace: "open-cluster-management-agent"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "bootstrap-hub-kubeconfig"
+  namespace: "open-cluster-management-agent"
+type: Opaque
+data:
+  kubeconfig: "YXBpVmVyc2lvbjogdjEKY2x1c3RlcnM6Ci0gY2x1c3RlcjoKICAgIGNlcnRpZmljYXRlLWF1dGhvcml0eS1kYXRhOiBMUzB0TFMxQ1JVZEpUaUJEUlZKVVNVWkpRMEZVUlMwdExTMHRDazFKU1VVelZFTkRRVEJYWjBGM1NVSkJaMGxDUTJwQlRrSm5hM0ZvYTJsSE9YY3dRa0ZSYzBaQlJFSklUVkpSZDBWbldVUldVVkZMUlhkMFJsZEZSazRLVlVWNFJreHJUbEJVVkVWMlRVTXdSMEV4VlVWQmVFMXRWVzFXYTBsRmFHaGtRMEpWWTIxR2NHSnRiSFZhZVVKRVdsaEtNR0ZYV25CWk1rWXdXbE5DUWdwa1dGSnZZak5LY0dSSWEzZElhR05PVFdwRmQwNVVSWGROVkVWNFQwUlJlRmRvWTA1TmFsbDNUbFJGZDAxVVJYaFBSRkY0VjJwQk1VMVNVWGRGWjFsRUNsWlJVVXRFUVhSR1YwVkdUbFZGZUVaTWEwNVFWRlJGWkUxQ2MwZEJNVlZGUVhkM1ZWbFlRbkJNYlRscVkwUlJkVnBZYUdoaVdFSnpXbE0xYW1JeU1IY0taMmRGYVUxQk1FZERVM0ZIVTBsaU0wUlJSVUpCVVZWQlFUUkpRa1IzUVhkblowVkxRVzlKUWtGUlJGWTROMlppVFZCdlJHbDNSbGg1V25nME1pczRlUXBJU2k5dWVUZFBXak5aV2pCTVQycFdjRTFZWkd4T2REbE1NRmxRTHpoSlVucFlaazFZVG05M2IzQmlLMlYzTTJWclV6TjRZekkyWjB4a2R6VlJiR0pZQ2pOelRqUkZibXBSU1RWcFNFdHZiM293WTNad0swcDBhRkUyV0ZOMVNrNU1aV055ZFROTVNFTnhObmRxVlVRelpXdEZWRk0wVEVSMU16Sm1TVTR2UzFjS1pVNTBLMEo2VjJSamNVOUxXbHAzWTJKU1JuSXlaVGxaZVVSbU5TOVJOR0owUW1OUFYzQlJhSGxKU3pBMmVDOVJRMlJPVTJWbllURkdRbXhSZVhOamNnbzNaMjE1YVRkb05rUnBiRzVXZEhWMVluRkVZbVpOTnpSUlF6VnhaMlZhWW00NWJ6SnJaVWNyVUdKaVQyaFZiSGR5UTNGeE0waGFOemxFYkRkRE0wRXZDamd4V1RGc1Z6VlVhMnBxT1VKUGFEazFLemxHWlhVeE4wWkRObmxFVmxrNFoyc3lNMXAwUmxneGVIQjRTVnBVTlVwME5EVlZUR2hwTTBwbmFHdzFPRE1LUVdkTlFrRkJSMnBuWjBaclRVbEpRbGxFUVdaQ1owNVdTRk5OUlVkRVFWZG5RbE5FVkZaM1pWY3ZRbk15ZVc5bVdGVmpZMXBuWVVabFUxcDVXa1JCT1FwQ1oyZHlRbWRGUmtKUlkwSkJVVkY0VFVNNGQweFJXVWxMZDFsQ1FsRlZTRTFCUjBkSlYyZ3daRWhCTmt4NU9YQmpSMFYwV1RKRmRWcFlhR2hpV0VKekNscFROV3BpTWpCMldUSkZkbUl5VG5walJFRlBRbWRPVmtoUk9FSkJaamhGUWtGTlEwSlFRWGRJVVZsRVZsSXdiRUpDV1hkR1FWbEpTM2RaUWtKUlZVZ0tRWGRGUjBORGMwZEJVVlZHUW5kTlEwMUlXVWRCTVZWa1NIZFNkazFITUhkaE5rRjZiMFJIUjB3eWFEQmtTRUUyVEhrNWNHTkhSWFJaTWtWMVdsaG9hQXBpV0VKeldsTTFhbUl5TUhaaFdFSm9UREpPZVdKRE9VNVpXRTR3V2xoS1JGVnJkM1ZaYld4MWIycFRhMDFxUVhkTlVUUjNSRUZaUkZaUlVVdEVRVlp3Q21OSFJtcFpWRVZsVFVKM1IwRXhWVVZCZDNkV1VUSldlV1JIYkcxaFYwNW9aRWRWWjFGWVZqQmhSemw1WVZoU05VMUNNRWRCTVZWa1JHZFJWMEpDVW5ZS1pFUlNWWGg2VEdoaWN5OXVUMEpDYkZwNE1UWlhVbkZIVUdwQk5FSm5UbFpJVWtWRlRWUkJkbWRvVW1oalIydDFZakpPZDA1RE5XeGxSMFowWTBkNGJBcE1iVTUyWWxsSldFdHBOV2hqU0VKNlRHMDVhbU5FVVhWYVdHaG9ZbGhDYzFwVE5XcGlNakIzUkZGWlNrdHZXa2xvZG1OT1FWRkZURUpSUVVSblowZENDa0ZHU0c5cFprTjVaRzQxTVhrck9UbFNVRlppTm1oWVZubzBObFZvU1c1T2VVZDRRa2czZGtSd01tTkVUbTVPWkdsamFqQkZlVmxFWTBaRVZVcExXV2NLT1daa2NVTTVha1pqZVhKaldWYzVNbmxoUTNBeVNsQllSRGRoUkRKUFVHaHliRTlzYTJGTlJWVXlTbTEzSzJKaFdIcE5UV1I2ZVZWdGVrSjFTRmx1V0FwMWRYcDZPVkpCWkdSelNYaFpXQ3RyT1hjNVNHaDJaa0Z6VmpReFZVUlhjbHBUV0RNNVlTOHlOemRZYm14M2RtUnZSbWwxTVZWRlluZzJiRTR2ZW1WNkNrNXVZblpsUlZZclRHOXdjemxCZVdaaFRIbElNbkpYYjI1dVFVSTFSRFF6YmpaeU9GaFlSR1ZZUWxGUVRHb3liRkJJZGs5UEsweHNOVWRPYTBsM1QyMEtRMkpLYWk5eE9XWlZkbFprTlROVVJYRnhUMHhNZWtsU05HOUtObFExWjA0d1VGUm9Zek4zUVdGS1lsSlpaa3RQUTFwck5USjJiRWRIVlZGeGFsYzNUQXBLTUdSR1dWSjZNazAwVkZwbllrRnlObmRZTTJORlRTdDZVbnBNZGpkUmRFNUZRWEo2TUZnelNYTm5SSE5DT1dkQlpUSkdTa2h2TUdjM1drVkRUVUp0Q2tGSFRUVk5WamhzYlhGME5XTlRaVVEzYXpGVmRVVmpPWGczTkROMFoxRTNlSFZxYUUxTlRuQlNMMlJDWkVKSmFrdHRZM2x5YW5KUVN6WmxRMkZqUkhZS1RHTXlWMnBVVTNkblpXcG5kemRSZEZkeFVDczFUV3hWVEVaeWFYSnJhak5rYTJnNVowSXJOVTlaVjNSV2FrbDRaR2x2WTBFMlRVeHVUVzU2WXprM1R3cFRVVDA5Q2kwdExTMHRSVTVFSUVORlVsUkpSa2xEUVZSRkxTMHRMUzBLTFMwdExTMUNSVWRKVGlCRFJWSlVTVVpKUTBGVVJTMHRMUzB0Q2sxSlNVVk9WRU5EUVhneVowRjNTVUpCWjBsVlptUkROM3BtYURRMGNUbFhTMW80VERCeVozTmlZbXRZWkZVd2QwUlJXVXBMYjFwSmFIWmpUa0ZSUlV3S1FsRkJkMmRaT0hoRGVrRktRbWRPVmtKQldWUkJiRlpVVFZKamQwWlJXVVJXVVZGSlJFRTFUMkl6U2pCaFEwSkVXVmhLZG1KSGJIVlpWRVZSVFVFMFJ3cEJNVlZGUW5kM1NGVnRSbk5hVjJ4dVlVUkZVVTFCTkVkQk1WVkZRMmQzU0ZWdFZtdEpSV2hvWkVSRldrMUNZMGRCTVZWRlEzZDNVVlZ0Vm10SlJXaG9DbVJEUWxWamJVWndZbTFzZFZwNlJXOU5RMWxIUVRGVlJVRjNkMlpWYlZaclNVVm9hR1JEUWxWamJVWndZbTFzZFZwNVFsVmpibFo2WkVOQ1ZGcFlTaklLWVZkT2JHTjZRV1ZHZHpCNVRWUkJNVTFFVlhoT2FrMHdUV3BLWVVaM01IcE5WRUV4VFVSTmVFNXFUVEJOYWtwaFRVVmplRVpFUVZOQ1owNVdRa0Z2VkFwRE1GWlpVVlV4VVZSRlZYVlJNRGxPVFZNNGQweFJXVVJXVVZGRVJYbGFVMXBYVVdkVFIwWXdTVVpTZVZsWGJIVmhWelZ1U1VWT2JHTnVVbkJhYld4cUNsbFlVbXhKUlVZeFpFZG9kbU50YkRCbFZFTkRRV0ZKZDBSUldVcExiMXBKYUhaalRrRlJSVUpDVVVGRVoyZEhVRUZFUTBOQldXOURaMmRIUWtGS1pITUtZa2hFYTFBM1NHZGhZVzlwV2xKVFZHdG5lVWhQYmxKUVRuTktTeTgyT0RGUFNWbGFNVFUxUkVGNU9HNTRlRmgxUjFSc1prdHlNSE5oUTFONGVrMW9VZ3BwV0V4WFlWaE5SVWQ2YVhveVowbDZUaTlLUjB4dFVXaG5XR3hhT1hGS05sWkxlbnB3Wm1wS2FVYzBZMHRyWVhKWGVVMVNNa2hLU1RCNVdrbzRiMnhOQ2pWSEszQmlNVEJQV1VKc2IxWXplVWczTDFwd1RuVkhZMWhUWVRoek5YaHhlRTFMYzNwNWRXWnFLMjU1UkhwT1lsRm9VMFZFVjNGSFZtdHlNMk5OTW1JS1NHeEViRVphTlVNd1NFcHZSMWRYZGxkR1kwVklXWHA1YzFkTlRVUTBaMU5qTlZSTmNqSTRUbHBYVFhScVQwTm9jbHBMUVdoblNFUjVjMVZKT0ZOcWJncExlVTlIU0dST1ozbDFWWHBYZDFCdmMzRkdOSGxuUkVRM2RuZHpPVlpOVFU5UmMyOXJXalpRV2twSmJ6QTNSRnBUWkZaMlZVSmxVemhtYjBaSE5XZGlDbFkxVmt0bVNXWnRTRlZKVURGWEsyTnlaRlk1Vm1aSGNYaENiemM1YzJSVWVrdEhSSEZITnpsVVNWWnFSMFZZUlRkNE9WVnBkRGh2WXpjNU1teHJWVThLVWtKQlUwaFFSbTl1V1U0NVJFMVNVWEJZUW01b09UWXlhME5YUVRaTVpreERkVTE2YTBKMlQyUTNURlZzZVdsUlJqaHlRVVJRVjJGa1RuTlNTVFpMZWdweFpXSkVibWhrYlZoRVNtZERlVzV6VGs1ME5pOXFRMUowVTFoUlZrMWlOWG81WW5WUGJHdFhVR0lyVGtSaEwyOUhkSFYyWjBKS1NGTlNhbTl4VVVsRUNrRlJRVUp2TVVGM1ZHcEJaRUpuVGxaSVVUUkZSbWRSVldjd01XTkliSFozWWs1emNVZ3hNVWhJUjFsSGFGaHJiV050VVhkSWQxbEVWbEl3YWtKQ1ozY0tSbTlCVlRkQ05UWndjVzU1UlZCa04zWmhjRXRyVUd4YVltWkpXbE5QYzNkRVFWbEVWbEl3VkVKQlZYZEJkMFZDTDNwQlRrSm5hM0ZvYTJsSE9YY3dRZ3BCVVhOR1FVRlBRMEZSUlVGQmNGRkdSekJrY0ZCa1lUVXhXR1ozY0ZCUWRWSlBLMnhoWm5SMVFuVmhSeXRyU0cxTlZWbHdWbXRDWjI1UFowaFJZek5WQ2poNGQzQnVTa05HWWxWUVRISlFTa2x4UmtSME1HUTJUVXQwVDJkTlMxbDVMMG8yTUdoYVVVc3JOVzB4VDJ4S2EyWjZOMmxDWWtSUWRVYzFjM28yZUc0S1UxRjVUemxCVDFJcmNFdzFTSEZaYTFGQlkwOUJlRE4xWW5aQ1J5dDVNbE0yV0RoRFl6RjZTRXAxTjNSMGIzVnNORlEzYlVKUVN6aFdaVmw2VEROVGR3cE9ZVmd4WjNKSVJraFpZblJWYTNZNU1tOWtUak0yT1hsRFQybEdZeXQwVUVkMmRESm5Obmt3YnpSU1dYVnViMjFYZG5SalNpdHJRa2N6YkhsR1ZTdFVDa05tWVRZd1V6bEhWMmRaWXpSVk16ZFNSVlZOVWt3M1ZXeFdjVlJ6UWtkdFFVWnRiMDUxZVZwNWFETlNaMGRXUlUxVFJIYzNWMGxaZUc1T1NYQmpOM2NLYUZsbFZuTjJhVTVKU0VFMmFYSnhkVlZYZVM5blJGVlVUQzk0YW1Zck5XbHBkejA5Q2kwdExTMHRSVTVFSUVORlVsUkpSa2xEUVZSRkxTMHRMUzBLTFMwdExTMUNSVWRKVGlCRFJWSlVTVVpKUTBGVVJTMHRMUzB0Q2sxSlNVVnVha05EUVRSaFowRjNTVUpCWjBsS1FVeDJVVzk2Y1RWcFZtd3JUVUV3UjBOVGNVZFRTV0l6UkZGRlFrTjNWVUZOU1VkUVRWRnpkME5SV1VRS1ZsRlJSMFYzU2xaVmVrVllUVUpWUjBFeFZVVkRRWGRQVkcwNWVXUkhaMmRSTWtaNVlqSjRjR0p0UlhoRlJFRlBRbWRPVmtKQlkwMUNNVXBvWWtkV2NBcGFNbWQ0UlVSQlQwSm5UbFpDUVc5TlFqRktiRnBEUWtsWldGRjRSMVJCV0VKblRsWkNRWE5OUlVaS2JGcERRa2xaV0ZGblZraEthR0ZYTlhCaWJXTjRDa3RFUVcxQ1owNVdRa0ZOVFVneFNteGFRMEpKV1ZoUloxWklTbWhoVnpWd1ltMWpaMVpJU2pGak0xRm5WVEpXZVdSdGJHcGFXRTEzU0doalRrMXFSWGNLVGxSQk1VMVVXWGhOVkVrMVYyaGpUazE2UlhkT1ZFRjZUVlJaZUUxVVNUVlhha05DYW5wRlRFMUJhMGRCTVZWRlFtaE5RMVpXVFhoR2VrRldRbWRPVmdwQ1FXZE5SR3MxZG1OdVVtOUpSVTVvWTIwNWMyRlhOV2hOVWtGM1JHZFpSRlpSVVVoRVFXUlRXVmQ0YkdGWFpHOU5Va0YzUkdkWlJGWlJVVXRFUVdSVENscFhVV2RUUjBZd1RWSnJkMFozV1VSV1VWRk1SRUpDVTFwWFVXZFRSMFl3U1VaU2VWbFhiSFZoVnpWdVRWTm5kMHBuV1VSV1VWRkVSRUk1VTFwWFVXY0tVMGRHTUVsR1VubFpWMngxWVZjMWJrbEdVbmxrV0U0d1NVWk9iR051V25CWk1sWjZUVWxKUWtscVFVNUNaMnR4YUd0cFJ6bDNNRUpCVVVWR1FVRlBRd3BCVVRoQlRVbEpRa05uUzBOQlVVVkJlVVprUjBKelRXazNSRk5aWVRNek5uaFJOazV5VUdKQ1RreDBWbUZvZDFwMldHbzJNMk5VY0ZSblNVSXhSekp0Q2xOamJ6UmpVR1U1WVZkVVYwUkZZVlpwVkU5MU1HNDJlV2h2YTBObE1FbG5lVkJVYUVKQ1F6UlVLMjlsY2xCVWIwZGhkekpqUzBOd05FODVjbFV3VHlzS2JrZFpXblE0Y0VsMlYzbFpSR2hwTUVNeGRHZ3hUVkpKYjJkQmFXVlhiVzlLTVRaNVYyYzFWWE5OWkdnM1IxRjJWRUZ0TjFoeE0yaHNRMmMzWjNnelRRcFBiMFZOUzFSNFdsVjRVelpWT1hKUlNFMHhSVlZvSzFSeVpXUmtRbE5CUkVJd2JWbEhkMjVSUkd4elIxbHhkMjlDZEdFM1JVdEVjVFZ3ZDJjNFJVSjNDbmRvVjBGdVVXdHhkSFZJYkV4SmVHTkZRbEZWYXpoRVpsWm9XRFF6U1VOck5IRnVaa05hZGxFdmRsQjJVRk5OTm5WSlIwSkZNWFZLZEhkRWFrOTNkVXdLWVU5MGVrTXpiMUoxY205eE1ERllZV0UzYUZkT2NGSkdVRzVpZFc4NGJYSTBkbkpOWTFGSlJFRlJRVUp2TkVnMlRVbElNMDFCT0VkQk1WVmtSWGRGUWdvdmQxRkdUVUZOUWtGbU9IZElVVmxFVmxJd1QwSkNXVVZHVDNkbFpYRmhjRGhvUkRObE56SnhVM0JFTlZkWE0zbEhWV3B5VFVsSVJVSm5UbFpJVTAxRkNtZGlkM2RuWW0xQlJrOTNaV1Z4WVhBNGFFUXpaVGN5Y1ZOd1JEVlhWek41UjFWcWNtOVpSMVp3U1VkVFRVbEhVRTFSYzNkRFVWbEVWbEZSUjBWM1NsWUtWWHBGV0UxQ1ZVZEJNVlZGUTBGM1QxUnRPWGxrUjJkblVUSkdlV0l5ZUhCaWJVVjRSVVJCVDBKblRsWkNRV05OUWpGS2FHSkhWbkJhTW1kNFJVUkJUd3BDWjA1V1FrRnZUVUl4U214YVEwSkpXVmhSZUVkVVFWaENaMDVXUWtGelRVVkdTbXhhUTBKSldWaFJaMVpJU21oaFZ6VndZbTFqZUV0RVFXMUNaMDVXQ2tKQlRVMUlNVXBzV2tOQ1NWbFlVV2RXU0Vwb1lWYzFjR0p0WTJkV1NFb3hZek5SWjFVeVZubGtiV3hxV2xoUFEwTlJRemN3UzAwMmRWbHNXbVpxUVU0S1FtZHJjV2hyYVVjNWR6QkNRVkZ6UmtGQlQwTkJVVVZCV0ZkVGN6aExNVUYwV0RGMFNpdENURlZEU1VveEswMWFabVpOWkVWTmRHOVVkM1pKYmtaaGNncHJlbkZPUzFWWmRGZFdSMmRzUWpoNlQxbEJlSGMwVW5KTFUxQkpXbUV5TkdWcWMwOTNPVzhyTWxWd1VIWTFaeXRaVjFKS1FYSTRNaXRoWTFwV1VIUkRDbXhKZHpkc1IydGtNRXhsUmk5R2MyNWhiamRPZFdWV09VUkNTSEpOVFhwNmVHVkxNQ3RsVTJoSkwwZDRjSFp6WnpaRGNGbHJTelI1T1VabFowVjBhMFFLU0hkbFpGTkdOMnhaWmk5MVdFODBkR2R6U0hGa2REVnBWbmczYkRGcVJWRjBVbnBMVFd4VGRYcDFOMWsyWWpGeU5XTklhazFaZFROcmNYWjRORWRrVndwRlRrRktZWEJ2UzBsYVdUYzViV1pPV205VE4zZDJiVFJ4TjJkYVZUWnBSbWcwVVZBM1VtcExOR0ZQVFZCVlEweEJZVEZFYkd0UlRYTlBNRkUxWjJKcENtSlhRbXN2UmtoWFlVb3ZiRmQ0ZGpCeVNVaDJOWFJTVVRCWlVGcHFNMDFLWlhsdGVWUjJkM1ZzZDNsdVJGRTlQUW90TFMwdExVVk9SQ0JEUlZKVVNVWkpRMEZVUlMwdExTMHRDZz09CiAgICBzZXJ2ZXI6IGh0dHBzOi8vYXBpLm9jcDQuZXhhbXBsZS5jb206NjQ0MwogIG5hbWU6IGRlZmF1bHQtY2x1c3Rlcgpjb250ZXh0czoKLSBjb250ZXh0OgogICAgY2x1c3RlcjogZGVmYXVsdC1jbHVzdGVyCiAgICBuYW1lc3BhY2U6IGRlZmF1bHQKICAgIHVzZXI6IGRlZmF1bHQtYXV0aAogIG5hbWU6IGRlZmF1bHQtY29udGV4dApjdXJyZW50LWNvbnRleHQ6IGRlZmF1bHQtY29udGV4dApraW5kOiBDb25maWcKcHJlZmVyZW5jZXM6IHt9CnVzZXJzOgotIG5hbWU6IGRlZmF1bHQtYXV0aAogIHVzZXI6CiAgICB0b2tlbjogZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltb3dYekYwU0ZKdlMxbHVPRkZSY2tsTlJqUnZMVTlJYlU5dGNsTk5jVVZCZUhwZlFsWTRUSFZFVTBraWZRLmV5SnBjM01pT2lKcmRXSmxjbTVsZEdWekwzTmxjblpwWTJWaFkyTnZkVzUwSWl3aWEzVmlaWEp1WlhSbGN5NXBieTl6WlhKMmFXTmxZV05qYjNWdWRDOXVZVzFsYzNCaFkyVWlPaUp0WVc1aFoyVmtMV05zZFhOMFpYSWlMQ0pyZFdKbGNtNWxkR1Z6TG1sdkwzTmxjblpwWTJWaFkyTnZkVzUwTDNObFkzSmxkQzV1WVcxbElqb2liV0Z1WVdkbFpDMWpiSFZ6ZEdWeUxXSnZiM1J6ZEhKaGNDMXpZUzEwYjJ0bGJpMWllbnBxTmlJc0ltdDFZbVZ5Ym1WMFpYTXVhVzh2YzJWeWRtbGpaV0ZqWTI5MWJuUXZjMlZ5ZG1salpTMWhZMk52ZFc1MExtNWhiV1VpT2lKdFlXNWhaMlZrTFdOc2RYTjBaWEl0WW05dmRITjBjbUZ3TFhOaElpd2lhM1ZpWlhKdVpYUmxjeTVwYnk5elpYSjJhV05sWVdOamIzVnVkQzl6WlhKMmFXTmxMV0ZqWTI5MWJuUXVkV2xrSWpvaVptTmhPVEkyT0RndFpHUTFOaTAwTnpjd0xXRXhaV1l0Wmpnd05EZzVPV016WlRFNElpd2ljM1ZpSWpvaWMzbHpkR1Z0T25ObGNuWnBZMlZoWTJOdmRXNTBPbTFoYm1GblpXUXRZMngxYzNSbGNqcHRZVzVoWjJWa0xXTnNkWE4wWlhJdFltOXZkSE4wY21Gd0xYTmhJbjAuR2xydlNUcEM0SVUtYlZSLUFkdVRQUnpKaWRPaXpnQ0x0OVp4RTkyeHlwejB3bm5WUkdWeVRFWUlXdHRuRWM3Y3A2VUp5dk1DRXhmNUZjVXJQbTIzTU9RY0Q1dVVXTkxxbk50bDBJUHpSZEdKREFydGc0Nm5LWlVIWDQ1b0Z2M3RxeDV4emIwVU4ydnM2Ui11cmhvNXRJY29wYXFVNUZfWWxrejcwSGlZMUVKVVQ1RTJHY3REVTZXaHZ2S3dYZU5lVHRyRVdiMjJsY3FyTG9lVlQ0N09KWXoweTRKSTVRczJ2LTd0M2NKQVRQazNsU3JRSkRrOGNGdk9MUEVvUDZybFZ5blYzZlFhamFaVV9DeTVKd2pyVExLWm5uQWVJZ255Ql9LV2V5M0U4NEVnVG5RS0IwcUJZX0JLSkIzVnBXY3ZoeWNxWG5DV3dQNlRiQTBVZ0h3Tzg4NkR1ZDVRZ3VUUXZKWEhLMkJ5cDVjZFlQeGFmY0tTVFJ6Q0cxMGY4RzdhSzUzb09KUGxKMFNSem54angwcWF4bm5TNkNLZm11SFIyd3R2UjdyanR4TE5hTGtIbnEyRjhXRVU2MkV0bGpSQ2J6c2h2WGR1NWRLb0lwYUFkZndXUm1Dc0JJdWtYcWZOY1dmYlduSDdPREtQS2txV2hBRWluZUlmLTdNS2tZNXl2Q205S2xqaHY1azAxU0k0dFBkU3ltN2pIZi1xeUgzTGYyRkk2UGx5bjdUbTdmT0tHQzMxdXUzdjhRSkRSUXBtdGd1ZEcyellzN3FPeE5XVXM2VTlPVWtFQjJsV19VdS03UEhkYTFZZHpqeEFCZjRoNmJfSlQ4cHVzMl94aXJjRnJNNU1jSUMtZU45ckdMbEQ3Y1EteTNKbU81MzJ4WEdoektjWEQxMkd4cjgK"
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: klusterlet
+rules:
+- apiGroups: [""]
+  resources: ["secrets", "configmaps", "serviceaccounts"]
+  verbs: ["create", "get", "list", "update", "watch", "patch", "delete"]
+- apiGroups: ["authorization.k8s.io"]
+  resources: ["subjectaccessreviews"]
+  verbs: ["create"]
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["create", "get", "list", "watch","delete"]
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["", "events.k8s.io"]
+  resources: ["events"]
+  verbs: ["create", "patch", "update"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["create", "get", "list", "update", "watch", "patch", "delete"]
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["clusterrolebindings", "rolebindings"]
+  verbs: ["create", "get", "list", "update", "watch", "patch", "delete"]
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["clusterroles", "roles"]
+  verbs: ["create", "get", "list", "update", "watch", "patch", "delete", "escalate", "bind"]
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["create", "get", "list", "update", "watch", "patch", "delete"]
+- apiGroups: ["operator.open-cluster-management.io"]
+  resources: ["klusterlets"]
+  verbs: ["get", "list", "watch", "update", "patch", "delete"]
+- apiGroups: ["operator.open-cluster-management.io"]
+  resources: ["klusterlets/status"]
+  verbs: ["update", "patch"]
+- apiGroups: ["work.open-cluster-management.io"]
+  resources: ["appliedmanifestworks"]
+  verbs: ["list", "update", "patch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: open-cluster-management:klusterlet-admin-aggregate-clusterrole
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+rules:
+- apiGroups: ["operator.open-cluster-management.io"]
+  resources: ["klusterlets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: klusterlet
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: klusterlet
+subjects:
+- kind: ServiceAccount
+  name: klusterlet
+  namespace: "open-cluster-management-agent"
+
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: klusterlet
+  namespace: "open-cluster-management-agent"
+  labels:
+    app: klusterlet
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: klusterlet
+  template:
+    metadata:
+      annotations:
+        target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+      labels:
+        app: klusterlet
+    spec:
+      serviceAccountName: klusterlet
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/infra
+          operator: Exists
+      containers:
+      - name: klusterlet
+        image: registry.redhat.io/rhacm2/registration-rhel8-operator@sha256:568d3b5dc4da1dd35c68d1405c274933d6129462b5873e929e25a444c50f1d6b
+        imagePullPolicy: IfNotPresent
+        args:
+          - "/registration-operator"
+          - "klusterlet"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            scheme: HTTPS
+            port: 8443
+          initialDelaySeconds: 2
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            scheme: HTTPS
+            port: 8443
+          initialDelaySeconds: 2
+
+---
+apiVersion: operator.open-cluster-management.io/v1
+kind: Klusterlet
+metadata:
+  name: klusterlet
+spec:
+  registrationImagePullSpec: "registry.redhat.io/rhacm2/registration-rhel8@sha256:574b41e19bf26043f985fcfac8e8cd9384f1b37aba4d4eb3be3901ae6a427081"
+  workImagePullSpec: "registry.redhat.io/rhacm2/work-rhel8@sha256:b5c1519fda361b17f90ce895de2587d0b95692660fb79988ca2f21f71267ebe1"
+  clusterName: "managed-cluster"
+  namespace: "open-cluster-management-agent"
+  nodePlacement:
+    tolerations:
+    - effect: NoSchedule
+      key: node-role.kubernetes.io/infra
+      operator: Exists
+[student@workstation multicluster-review]$ oc login -u admin -p redhat \
+> https://api.ocp4-mng.example.com:6443
+Login successful.
+
+You have access to 66 projects, the list has been suppressed. You can list all projects with 'oc projects'
+
+Using project "default".
+[student@workstation multicluster-review]$ ll
+total 52
+-rw-rw-r--. 1 student student 15541 Oct  1 16:43 import.yaml
+-rw-rw-r--. 1 student student 15148 Oct  1 16:41 klusterlet-crd.yaml
+-rw-rw-r--. 1 student student   491 Oct  1 14:46 klusterlet.yaml
+-rw-rw-r--. 1 student student   153 Oct  1 14:46 mch.yaml
+-rw-rw-r--. 1 student student   136 Oct  1 14:46 mngcluster.yaml
+-rw-rw-r--. 1 student student   147 Oct  1 14:46 operator-group.yaml
+-rw-rw-r--. 1 student student   265 Oct  1 14:46 subscription.yaml
+[student@workstation multicluster-review]$ oc create -f klusterlet-crd.yaml 
+customresourcedefinition.apiextensions.k8s.io/klusterlets.operator.open-cluster-management.io created
+[student@workstation multicluster-review]$ oc create -f import.yaml 
+namespace/open-cluster-management-agent created
+serviceaccount/klusterlet created
+secret/bootstrap-hub-kubeconfig created
+clusterrole.rbac.authorization.k8s.io/klusterlet created
+clusterrole.rbac.authorization.k8s.io/open-cluster-management:klusterlet-admin-aggregate-clusterrole created
+clusterrolebinding.rbac.authorization.k8s.io/klusterlet created
+deployment.apps/klusterlet created
+klusterlet.operator.open-cluster-management.io/klusterlet created
+[student@workstation multicluster-review]$ oc get pod -n open-cluster-management-agent
+NAME                          READY   STATUS              RESTARTS   AGE
+klusterlet-5984dd44bc-k4w8r   0/1     ContainerCreating   0          18s
+[student@workstation multicluster-review]$ oc get pod -n open-cluster-management-agent
+NAME                          READY   STATUS    RESTARTS   AGE
+klusterlet-5984dd44bc-k4w8r   1/1     Running   0          24s
+[student@workstation multicluster-review]$ oc get pod -n open-cluster-management-agent
+NAME                                             READY   STATUS              RESTARTS   AGE
+klusterlet-5984dd44bc-k4w8r                      1/1     Running             0          25s
+klusterlet-registration-agent-867fc6d5f8-fmrf9   0/1     ContainerCreating   0          1s
+klusterlet-registration-agent-867fc6d5f8-jfh6q   0/1     ContainerCreating   0          1s
+klusterlet-registration-agent-867fc6d5f8-lqdb9   0/1     ContainerCreating   0          1s
+klusterlet-work-agent-66f9556c87-ll2tr           0/1     ContainerCreating   0          1s
+klusterlet-work-agent-66f9556c87-shcwv           0/1     ContainerCreating   0          0s
+klusterlet-work-agent-66f9556c87-vgxpg           0/1     ContainerCreating   0          0s
+[student@workstation multicluster-review]$ oc get pod -n open-cluster-management-agent
+NAME                                             READY   STATUS              RESTARTS   AGE
+klusterlet-5984dd44bc-k4w8r                      1/1     Running             0          28s
+klusterlet-registration-agent-867fc6d5f8-fmrf9   0/1     ContainerCreating   0          4s
+klusterlet-registration-agent-867fc6d5f8-jfh6q   0/1     ContainerCreating   0          4s
+klusterlet-registration-agent-867fc6d5f8-lqdb9   0/1     ContainerCreating   0          4s
+klusterlet-work-agent-66f9556c87-ll2tr           0/1     ContainerCreating   0          4s
+klusterlet-work-agent-66f9556c87-shcwv           0/1     ContainerCreating   0          3s
+klusterlet-work-agent-66f9556c87-vgxpg           0/1     ContainerCreating   0          3s
+[student@workstation multicluster-review]$ oc get pod -n open-cluster-management-agent
+NAME                                             READY   STATUS    RESTARTS      AGE
+klusterlet-5984dd44bc-k4w8r                      1/1     Running   0             51s
+klusterlet-registration-agent-867fc6d5f8-fmrf9   1/1     Running   0             27s
+klusterlet-registration-agent-867fc6d5f8-jfh6q   1/1     Running   0             27s
+klusterlet-registration-agent-867fc6d5f8-lqdb9   1/1     Running   0             27s
+klusterlet-work-agent-66f9556c87-ll2tr           1/1     Running   0             27s
+klusterlet-work-agent-66f9556c87-shcwv           1/1     Running   1 (17s ago)   26s
+klusterlet-work-agent-66f9556c87-vgxpg           1/1     Running   0             26s
+[student@workstation multicluster-review]$ oc login -u admin -p redhat \
+> https://api.ocp4.example.com:6443
+Login successful.
+
+You have access to 74 projects, the list has been suppressed. You can list all projects with 'oc projects'
+
+Using project "default".
+[student@workstation multicluster-review]$ oc get managedcLUSTER
+NAME              HUB ACCEPTED   MANAGED CLUSTER URLS                JOINED   AVAILABLE   AGE
+local-cluster     true           https://api.ocp4.example.com:6443   True     True        16m
+managed-cluster   true                                               True     True        10m
+[student@workstation multicluster-review]$ oc get managedcluster
+NAME              HUB ACCEPTED   MANAGED CLUSTER URLS                JOINED   AVAILABLE   AGE
+local-cluster     true           https://api.ocp4.example.com:6443   True     True        16m
+managed-cluster   true                                               True     True        11m
+[student@workstation multicluster-review]$ ll
+total 52
+-rw-rw-r--. 1 student student 15541 Oct  1 16:43 import.yaml
+-rw-rw-r--. 1 student student 15148 Oct  1 16:41 klusterlet-crd.yaml
+-rw-rw-r--. 1 student student   491 Oct  1 14:46 klusterlet.yaml
+-rw-rw-r--. 1 student student   153 Oct  1 14:46 mch.yaml
+-rw-rw-r--. 1 student student   136 Oct  1 14:46 mngcluster.yaml
+-rw-rw-r--. 1 student student   147 Oct  1 14:46 operator-group.yaml
+-rw-rw-r--. 1 student student   265 Oct  1 14:46 subscription.yaml
+[student@workstation multicluster-review]$ cd ..
+[student@workstation labs]$ ll
+total 0
+drwxrwxr-x. 2 student student 166 Oct  1 16:43 multicluster-review
+[student@workstation labs]$ cd multicluster-review/
+[student@workstation multicluster-review]$ echo "# ACMinstallationOCP" >> README.md
+[student@workstation multicluster-review]$ git init
+Initialized empty Git repository in /home/student/DO480/labs/multicluster-review/.git/
+[student@workstation multicluster-review]$ git add .
+[student@workstation multicluster-review]$ git commit -m "Advance Cluster Management installation "
+[master (root-commit) 4daa027] Advance Cluster Management installation
+ Committer: Student User <student@workstation.lab.example.com>
+Your name and email address were configured automatically based
+on your username and hostname. Please check that they are accurate.
+You can suppress this message by setting them explicitly. Run the
+following command and follow the instructions in your editor to edit
+your configuration file:
+
+    git config --global --edit
+
+After doing this, you may fix the identity used for this commit with:
+
+    git commit --amend --reset-author
+
+ 8 files changed, 498 insertions(+)
+ create mode 100644 README.md
+ create mode 100644 import.yaml
+ create mode 100644 klusterlet-crd.yaml
+ create mode 100644 klusterlet.yaml
+ create mode 100644 mch.yaml
+ create mode 100644 mngcluster.yaml
+ create mode 100644 operator-group.yaml
+ create mode 100644 subscription.yaml
+[student@workstation multicluster-review]$ git branch -m Main
+[student@workstation multicluster-review]$ git remote add origin https://github.com/kodesam/ACMinstallationOCP.git
+[student@workstation multicluster-review]$ git push -u Main
+fatal: 'Main' does not appear to be a git repository
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+[student@workstation multicluster-review]$ git push -u main
+fatal: 'main' does not appear to be a git repository
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+[student@workstation multicluster-review]$ git push -u origin main
+error: src refspec main does not match any
+error: failed to push some refs to 'https://github.com/kodesam/ACMinstallationOCP.git'
+[student@workstation multicluster-review]$ git push -u origin Main
+Gtk-Message: 16:51:16.634: Failed to load module "canberra-gtk-module"
+Gtk-Message: 16:51:21.922: Failed to load module "canberra-gtk-module"
+remote: Invalid username or password.
+fatal: Authentication failed for 'https://github.com/kodesam/ACMinstallationOCP.git/'
+[student@workstation multicluster-review]$ 
+[student@workstation multicluster-review]$ 
+
